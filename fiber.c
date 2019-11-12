@@ -13,16 +13,10 @@ scheduler *fiber_open() {
 void fiber_close(scheduler *sched) {
     assert(sched != NULL);
 
-    if (sched->fiber_list == NULL) {
-        free(sched);
-        sched = NULL;
-    }
-    else {
-        while (sched->fiber_list != NULL) {
-            fiber *tmp = sched->fiber_list;
-            sched->fiber_list = tmp->next;
-            free(tmp);            
-        }
+    while (sched->fiber_list != NULL) {
+        fiber *tmp = sched->fiber_list;
+        sched->fiber_list = tmp->next;
+        free(tmp);            
     }
 
     free(sched);
