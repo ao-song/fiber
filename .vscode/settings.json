@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "type_traits": "cpp",
+        "cmath": "cpp",
+        "__config": "cpp",
+        "__nullptr": "cpp"
+    }
+}

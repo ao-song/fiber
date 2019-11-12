@@ -1,11 +1,17 @@
 #include "fiber.h"
 
-#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+
+static fiber *_get_fiber_(scheduler *sched, int id);
+void _store_running_stack_(char *stack, fiber *fb);
 
 scheduler *fiber_open() {
     scheduler *sched = malloc(sizeof(scheduler));
-    sched->fiber_num = 0;
+    sched->id_count = 0;
     sched->fiber_list = NULL;
+    sched->running_fiber = NULL;
 
     return sched;
 }
@@ -28,7 +34,7 @@ int fiber_new(scheduler *sched, fiber_func func, void *arg) {
     fb->sched = sched;
     fb->func = func;
     fb->arg = arg;
-    fb->state = DETACHED;
+    fb->state = NEW;
     fb->next = NULL;
 
     if (sched->fiber_list == NULL) {
@@ -40,5 +46,74 @@ int fiber_new(scheduler *sched, fiber_func func, void *arg) {
         fb->next = tmp;
     }
 
-    return ++(sched->fiber_num);
+    return fb->id = ++(sched->id_count);
+}
+
+void fiber_resume(scheduler *sched, int id) {
+    fiber *fb = _get_fiber_(sched, id);
+    assert(fb != NULL);
+
+    switch (fb->state) {
+    case NEW:
+        getcontext(&fb->ctx);
+        fb->ctx.uc_stack.ss_sp = sched->stack;
+        fb->ctx.uc_stack.ss_size = STACK_SIZE;
+        fb->ctx.uc_link = &sched->main;
+        fb->state = RUNNING;
+        sched->running_fiber = fb;
+        makecontext(&fb->ctx, (void (*)(void)) fb->func, 1, fb->arg);
+        swapcontext(&sched->main, &fb->ctx);
+        break;
+    case SUSPENDED:
+        memcpy(fb->low, fb->stack, fb->size);
+        fb->state = RUNNING;
+        sched->running_fiber = fb;
+        swapcontext(&sched->main, &fb->ctx);
+        break;
+    default:
+        break;
+    }
+}
+
+void fiber_yield(scheduler *sched) {
+    fiber *fb = sched->running_fiber;
+    _store_running_stack_(sched->stack, fb);
+    fb->state = SUSPENDED;
+    sched->running_fiber = NULL;
+    swapcontext(&fb->ctx, &sched->main);
+}
+
+
+// Internal functions
+static fiber *
+_get_fiber_(scheduler *sched, int id) {
+    if (id < 0 || id > sched->id_count) {
+        return NULL;
+    }
+
+    fiber *fb = sched->fiber_list;
+    while (fb != NULL && fb->id != id) {
+        fb = fb->next;
+    }
+
+    return fb;
+}
+
+void
+_store_running_stack_(char *stack, fiber *fb) {
+    fb->high = fb->low = stack;
+    char x = 0;
+    if (&x > stack) {
+        fb->high = &x;
+    }
+    else {
+        fb->low = &x;
+    }
+
+    if (fb->stack != NULL) {
+        free(fb->stack);
+    }    
+    fb->size = fb->high - fb->low;
+    fb->stack = malloc(fb->size);
+    memcpy(fb->stack, stack, fb->size);
 }
