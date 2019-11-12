@@ -5,7 +5,7 @@
 #include <assert.h>
 
 static fiber *_get_fiber_(scheduler *sched, int id);
-void _store_running_stack_(char *stack, fiber *fb);
+static void _store_running_stack_(char *stack, fiber *fb);
 
 scheduler *fiber_open() {
     scheduler *sched = malloc(sizeof(scheduler));
@@ -99,7 +99,7 @@ _get_fiber_(scheduler *sched, int id) {
     return fb;
 }
 
-void
+static void
 _store_running_stack_(char *stack, fiber *fb) {
     fb->high = fb->low = stack;
     char x = 0;
