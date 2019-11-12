@@ -34,7 +34,9 @@ int fiber_new(scheduler *sched, fiber_func func, void *arg) {
     fb->sched = sched;
     fb->func = func;
     fb->arg = arg;
-    fb->state = NEW;
+    fb->state = NEW;    
+    fb->stack = NULL;
+    fb->size = 0;
     fb->next = NULL;
 
     if (sched->fiber_list == NULL) {
@@ -110,10 +112,11 @@ _store_running_stack_(char *stack, fiber *fb) {
         fb->low = &x;
     }
 
-    if (fb->stack != NULL) {
+    if (fb->high - fb->low > fb->size)
+    {
         free(fb->stack);
-    }    
-    fb->size = fb->high - fb->low;
-    fb->stack = malloc(fb->size);
+        fb->size = fb->high - fb->low;
+        fb->stack = malloc(fb->size);
+    }
     memcpy(fb->stack, stack, fb->size);
 }
