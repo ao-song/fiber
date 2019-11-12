@@ -22,6 +22,9 @@ void fiber_close(scheduler *sched) {
     while (sched->fiber_list != NULL) {
         fiber *tmp = sched->fiber_list;
         sched->fiber_list = tmp->next;
+        if (tmp->stack != NULL) {
+            free(tmp->stack);
+        }
         free(tmp);            
     }
 
