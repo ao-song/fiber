@@ -44,8 +44,7 @@ int fiber_new(scheduler *sched, fiber_func func, void *arg) {
 
     if (sched->fiber_list == NULL) {
         sched->fiber_list = fb;
-    }
-    else {
+    } else {
         fiber *tmp = sched->fiber_list;
         sched->fiber_list = fb;
         fb->next = tmp;
@@ -110,13 +109,11 @@ _store_running_stack_(char *stack, fiber *fb) {
     char x = 0;
     if (&x > stack) {
         fb->high = &x;
-    }
-    else {
+    } else {
         fb->low = &x;
     }
 
-    if (fb->high - fb->low > fb->size)
-    {
+    if (fb->high - fb->low > fb->size) {
         free(fb->stack);
         fb->size = fb->high - fb->low;
         fb->stack = malloc(fb->size);
